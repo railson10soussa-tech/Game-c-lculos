@@ -1,0 +1,1073 @@
+```html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MathMaster Quest - Desafio de Cálculo Mental</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans:['Outfit', 'sans-serif'],
+                        display: ['Fredoka', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            dark: '#0f172a',
+                            card: '#1e293b',
+                            accent: '#6366f1',
+                            secondary: '#ec4899',
+                            success: '#10b981',
+                            warning: '#f59e0b',
+                            danger: '#ef4444'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: radial-gradient(circle at top left, #1e1b4b, #0f172a, #020617);
+            color: #f8fafc;
+            min-height: 100vh;
+            user-select: none;
+        }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .glass-button {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-button:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .glass-button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .glass-button.active {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6)
+            border-color: #a855f7;
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.5);
+        }
+
+        .shake-anim {
+            animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-2px, 0, 0); }
+            20%, 80% { transform: translate3d(4px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
+            40%, 60% { transform: translate3d(6px, 0, 0); }
+        }
+
+        .pulse-correct {
+            animation: pulseGreen 0.5s ease-out;
+        }
+
+        @keyframes pulseGreen {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.5);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen justify-between font-sans overflow-x-hidden antialiased">
+
+    <!-- Header -->
+    <header class="w-full max-w-5xl mx-auto p-4 flex justify-between items-center z-10">
+        <div class="flex items-center gap-3 cursor-pointer" onclick="game.showScreen('menu')">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-500 to-pink-500 flex items-center justify-center text-white text-2xl font-bold shadow-lg shadow-indigo-500/30">
+                <i class="fa-solid fa-calculator"></i>
+            </div>
+            <div>
+                <h1 class="font-display font-bold text-2xl tracking-wide bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-pink-400 to-purple-400">;
+                    MathMaster
+                </h1>
+                <p class="text-xs text-slate-400 font-medium">Desafio de Cálculo Mental</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button id="btn-sound" onclick="audio.toggleMute()" class="glass-button w-10 h-10 rounded-xl flex items-center justify-center text-slate-300 hover:text-white">
+                <i class="fa-solid fa-volume-high text-lg"></i>
+            </button>
+            <button onclick="game.openStatsModal()" class="glass-button w-10 h-10 rounded-xl flex items-center justify-center text-slate-300 hover:text-white">
+                <i class="fa-solid fa-trophy text-lg"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow flex items-center justify-center p-4">
+        <div class="w-full max-w-xl">
+
+            <!-- TELAS DO JOGO -->
+
+            <!-- 1. TELA MENU INICIAL -->
+            <section id="screen-menu" class="glass-panel rounded-3xl p-6 md:p-8 space-y-6">
+                <div class="text-center space-y-2">
+                    <h2 class="font-display text-3xl md:text-4xl font-extrabold text-white">Pronto para o Desafio?</h2>
+                    <p class="text-slate-400 text-sm md:text-base">Configure seu jogo e exercite sua mente!</p>
+                </div>
+
+                <!-- Modos de Jogo -->
+                <div class="space-y-2">
+                    <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Modo de Jogo</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="game.selectMode('timer')" id="mode-timer" class="glass-button active rounded-2xl p-3 flex flex-col items-center gap-1">
+                            <i class="fa-solid fa-stopwatch text-xl text-indigo-400"></i>
+                            <span class="font-bold text-sm">Contra o Tempo</span>
+                            <span class="text-[10px] text-slate-400">30s ou 60s para pontuar</span>
+                        </button>
+                        <button onclick="game.selectMode('practice')" id="mode-practice" class="glass-button rounded-2xl p-3 flex flex-col items-center gap-1">
+                            <i class="fa-solid fa-feather text-xl text-emerald-400"></i>
+                            <span class="font-bold text-sm">Prática</span>
+                            <span class="text-[10px] text-slate-400">Sem pressão de tempo</span>
+                        </button>
+                        <button onclick="game.selectMode('levels')" id="mode-levels" class="glass-button rounded-2xl p-3 flex flex-col items-center gap-1">
+                            <i class="fa-solid fa-layer-group text-xl text-amber-400"></i>
+                            <span class="font-bold text-sm">Níveis</span>
+                            <span class="text-[10px] text-slate-400">Dificuldade crescente</span>
+                        </button>
+                        <button onclick="game.selectMode('perfect')" id="mode-perfect" class="glass-button rounded-2xl p-3 flex flex-col items-center gap-1">
+                            <i class="fa-solid fa-skull text-xl text-rose-400"></i>
+                            <span class="font-bold text-sm">Sequência Perfect</span>
+                            <span class="text-[10px] text-slate-400">1 erro = Fim de jogo</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Operações -->
+                <div class="space-y-2">
+                    <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Operações</label>
+                    <div class="grid grid-cols-5 gap-2" id="op-selector">
+                        <button onclick="game.toggleOp('add')" data-op="add" class="glass-button active rounded-xl py-2 font-bold text-lg">+</button>
+                        <button onclick="game.toggleOp('sub')" data-op="sub" class="glass-button active rounded-xl py-2 font-bold text-lg">-</button>
+                        <button onclick="game.toggleOp('mul')" data-op="mul" class="glass-button active rounded-xl py-2 font-bold text-lg">×</button>
+                        <button onclick="game.toggleOp('div')" data-op="div" class="glass-button active rounded-xl py-2 font-bold text-lg">÷</button>
+                        <button onclick="game.toggleOp('mix')" data-op="mix" class="glass-button rounded-xl py-2 font-bold text-sm flex items-center justify-center gap-1">
+                            <i class="fa-solid fa-shuffle"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Dificuldade -->
+                <div class="space-y-2">
+                    <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Dificuldade</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="game.selectDiff('easy')" id="diff-easy" class="glass-button active rounded-xl py-2 font-bold text-sm">Fácil</button>
+                        <button onclick="game.selectDiff('medium')" id="diff-medium" class="glass-button rounded-xl py-2 font-bold text-sm">Médio</button>
+                        <button onclick="game.selectDiff('hard')" id="diff-hard" class="glass-button rounded-xl py-2 font-bold text-sm">Difícil</button>
+                    </div>
+                </div>
+
+                <!-- Opção de Duração para Modo Timer -->
+                <div id="timer-options" class="space-y-2">
+                    <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Tempo de Jogo</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="game.selectTime(30)" id="time-30" class="glass-button active rounded-xl py-2 font-bold text-sm">30 Segundos</button>
+                        <button onclick="game.selectTime(60)" id="time-60" class="glass-button rounded-xl py-2 font-bold text-sm">60 Segundos</button>
+                    </div>
+                </div>
+
+                <button onclick="game.start()" class="w-full py-4 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:to-pink-600 font-display font-bold text-xl shadow-lg shadow-indigo-500/30 transition hover:scale-[1.02] active:scale-[0.98]">
+                    COMEÇAR JOGO <i class="fa-solid fa-play ml-2 text-sm"></i>
+                </button>
+            </section>
+
+            <!-- 2. TELA DO JOGO (GAMEPLAY) -->
+            <section id="screen-game" class="hidden glass-panel rounded-3xl p-6 md:p-8 relative">
+                
+                <!-- HUD Topo (Status) -->
+                <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-700/50">
+                    <!-- Pontuação -->
+                    <div>
+                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Pontos</span>
+                        <span id="game-score" class="font-display font-extrabold text-2xl md:text-3xl text-indigo-400">0</span>
+                    </div>
+
+                    <!-- Combo/Streak -->
+                    <div class="text-center">
+                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Combo</span>
+                        <div class="flex items-center justify-center gap-1">
+                            <i class="fa-solid fa-fire text-amber-500 text-lg"></i>
+                            <span id="game-streak" class="font-display font-extrabold text-2xl text-amber-400">0</span>
+                        </div>
+                    </div>
+
+                    <!-- Tempo / Nível / Status especial -->
+                    <div class="text-right">
+                        <span id="hud-timer-label" class="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Tempo</span>
+                        <span id="game-timer" class="font-display font-extrabold text-2xl md:text-3xl text-pink-400">30s</span>
+                    </div>
+                </div>
+
+                <!-- Barra de Progresso do Tempo/Nível -->
+                <div class="w-full h-2 bg-slate-800 rounded-full mb-6 overflow-hidden">
+                    <div id="game-progress-bar" class="h-full bg-gradient-to-r from-indigo-500 to-pink-500 transition-all duration-300 w-full"></div>
+                </div>
+
+                <!-- Power-ups / Ajuda -->
+                <div class="flex justify-center gap-3 mb-6">
+                    <button id="pu-skip" onclick="game.usePowerUp('skip')" class="glass-button px-3 py-1.5 rounded-xl text-xs font-bold text-indigo-300 flex items-center gap-1.5">
+                        <i class="fa-solid fa-forward text-indigo-400"></i> Pular <span id="pu-skip-count" class="bg-indigo-900/60 px-1.5 py-0.5 rounded-full text-[10px]">1</span>
+                    </button>
+                    <button id="pu-double" onclick="game.usePowerUp('double')" class="glass-button px-3 py-1.5 rounded-xl text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                        <i class="fa-solid fa-bolt text-amber-400"></i> 2x Pontos <span id="pu-double-count" class="bg-amber-900/60 px-1.5 py-0.5 rounded-full text-[10px]">1</span>
+                    </button>
+                    <button id="pu-hint" onclick="game.usePowerUp('hint')" class="glass-button px-3 py-1.5 rounded-xl text-xs font-bold text-emerald-300 flex items-center gap-1.5">
+                        <i class="fa-solid fa-lightbulb text-emerald-400"></i> Dica <span id="pu-hint-count" class="bg-emerald-900/60 px-1.5 py-0.5 rounded-full text-[10px]">1</span>
+                    </button>
+                </div>
+
+                <!-- Expressão Matemática -->
+                <div id="question-card" class="bg-slate-900/60 border border-slate-700/60 rounded-2xl p-6 mb-6 text-center shadow-inner relative overflow-hidden transition-transform">
+                    <div id="hint-box" class="hidden absolute top-2 left-1/2 -translate-x-1/2 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs px-3 py-1 rounded-full animate-bounce">
+                        💡 Dica: Resposta entre <span id="hint-range">0 e 10</span>
+                    </div>
+                    <div id="multiplier-badge" class="hidden absolute top-2 right-2 bg-amber-500/20 text-amber-400 border border-amber-500/40 text-xs px-2 py-0.5 rounded-full font-bold">
+                        ⚡ 2X PONTOS
+                    </div>
+                    <div id="math-expr" class="font-display font-extrabold text-4xl md:text-5xl text-white tracking-wider my-2">
+                        12 + 8 = ?
+                    </div>
+                    <!-- Display de Entrada do Usuário -->
+                    <div class="mt-4 flex justify-center items-center">
+                        <div id="user-input-display" class="w-48 h-12 bg-slate-800/80 border-2 border-indigo-500/50 rounded-xl flex items-center justify-center font-display text-2xl font-bold text-indigo-300 tracking-wider shadow-inner">
+                            <span class="animate-pulse">|</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Teclado Numérico Virtual (Mobile & Click) -->
+                <div class="grid grid-cols-3 gap-2 max-w-xs mx-auto mb-4">
+                    <button onclick="game.pressKey('1')" class="glass-button py-3 rounded-xl font-bold text-xl">1</button>
+                    <button onclick="game.pressKey('2')" class="glass-button py-3 rounded-xl font-bold text-xl">2</button>
+                    <button onclick="game.pressKey('3')" class="glass-button py-3 rounded-xl font-bold text-xl">3</button>
+                    <button onclick="game.pressKey('4')" class="glass-button py-3 rounded-xl font-bold text-xl">4</button>
+                    <button onclick="game.pressKey('5')" class="glass-button py-3 rounded-xl font-bold text-xl">5</button>
+                    <button onclick="game.pressKey('6')" class="glass-button py-3 rounded-xl font-bold text-xl">6</button>
+                    <button onclick="game.pressKey('7')" class="glass-button py-3 rounded-xl font-bold text-xl">7</button>
+                    <button onclick="game.pressKey('8')" class="glass-button py-3 rounded-xl font-bold text-xl">8</button>
+                    <button onclick="game.pressKey('9')" class="glass-button py-3 rounded-xl font-bold text-xl">9</button>
+                    <button onclick="game.pressKey('-')" class="glass-button py-3 rounded-xl font-bold text-xl text-slate-400">-</button>
+                    <button onclick="game.pressKey('0')" class="glass-button py-3 rounded-xl font-bold text-xl">0</button>
+                    <button onclick="game.pressKey('back')" class="glass-button py-3 rounded-xl font-bold text-lg text-rose-400">
+                        <i class="fa-solid fa-backspace"></i>
+                    </button>
+                </div>
+
+                <!-- Botão Enviar & Desistir -->
+                <div class="flex gap-2">
+                    <button onclick="game.quit()" class="w-1/3 py-3 rounded-xl glass-button font-bold text-xs text-slate-400 hover:text-rose-400">
+                        DESISTIR
+                    </button>
+                    <button onclick="game.submitAnswer()" class="w-2/3 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 font-display font-bold text-lg text-white shadow-lg shadow-emerald-500/20 active:scale-95 transition">
+                        CONFIRMAR <i class="fa-solid fa-check ml-1"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- 3. TELA DE GAME OVER / RESULTADOS -->
+            <section id="screen-result" class="hidden glass-panel rounded-3xl p-6 md:p-8 text-center space-y-6">
+                <div class="space-y-2">
+                    <div id="result-badge" class="inline-block px-4 py-1.5 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 font-bold text-xs uppercase tracking-wider mb-2">
+                        Fim de Jogo
+                    </div>
+                    <h2 class="font-display text-3xl md:text-4xl font-extrabold text-white" id="result-title">Excelente Trabalho!</h2>
+                    <p class="text-slate-400 text-sm" id="result-subtitle">Veja o resumo do seu desempenho:</p>
+                </div>
+
+                <!-- Placar de Destaque -->
+                <div class="bg-slate-900/50 rounded-2xl p-6 border border-slate-700/50 grid grid-cols-2 gap-4">
+                    <div class="col-span-2 pb-4 border-b border-slate-800">
+                        <span class="text-xs text-slate-400 block mb-1">Pontuação Final</span>
+                        <span id="res-score" class="font-display text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-pink-400 to-purple-400">0</span>
+                    </div>
+                    <div>
+                        <span class="text-xs text-slate-400 block">Acertos / Questões</span>
+                        <span id="res-accuracy-count" class="font-bold text-lg text-slate-200">0 / 0</span>
+                    </div>
+                    <div>
+                        <span class="text-xs text-slate-400 block">Precisão</span>
+                        <span id="res-accuracy-pct" class="font-bold text-lg text-emerald-400">0%</span>
+                    </div>
+                    <div>
+                        <span class="text-xs text-slate-400 block">Maior Combo</span>
+                        <span id="res-max-streak" class="font-bold text-lg text-amber-400">0 🔥</span>
+                    </div>
+                    <div>
+                        <span class="text-xs text-slate-400 block">Tempo Médio/Resp.</span>
+                        <span id="res-avg-time" class="font-bold text-lg text-cyan-400">0.0s</span>
+                    </div>
+                </div>
+
+                <!-- Novo Recorde Alert -->
+                <div id="high-score-alert" class="hidden p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-300 font-bold text-sm flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-crown text-amber-400 text-lg"></i> NOVO RECORDE PESSOAL!
+                </div>
+
+                <!-- Botões de Ação -->
+                <div class="flex flex-col md:flex-row gap-3">
+                    <button onclick="game.start()" class="flex-1 py-3.5 rounded-xl bg-gradient-to-r from-indigo-500 to-pink-500 hover:from-indigo-600 hover:to-pink-600 font-display font-bold text-white shadow-lg shadow-indigo-500/20">
+                        JOGAR NOVAMENTE
+                    </button>
+                    <button onclick="game.showScreen('menu')" class="py-3.5 px-6 rounded-xl glass-button font-bold text-slate-300 hover:text-white">
+                        MENU PRINCIPAL
+                    </button>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- MODAL DE ESTATÍSTICAS E CONQUISTAS -->
+    <div id="modal-stats" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="glass-panel w-full max-w-xl rounded-3xl p-6 md:p-8 space-y-6 max-h-[90vh] flex flex-col">
+            
+            <div class="flex items-center justify-between pb-4 border-b border-slate-700/60">
+                <h3 class="font-display font-bold text-2xl text-white flex items-center gap-2">
+                    <i class="fa-solid fa-trophy text-amber-400"></i> Conquistas & Records
+                </h3>
+                <button onclick="game.closeStatsModal()" class="w-8 h-8 rounded-full glass-button flex items-center justify-center text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Abas -->
+            <div class="flex border-b border-slate-800 gap-4">
+                <button onclick="game.switchTab('highscores')" id="tab-highscores" class="pb-2 font-bold text-sm text-indigo-400 border-b-2 border-indigo-400">
+                    High Scores
+                </button>
+                <button onclick="game.switchTab('badges')" id="tab-badges" class="pb-2 font-bold text-sm text-slate-400 border-b-2 border-transparent">
+                    Conquistas (<span id="badges-count">0/6</span>)
+                </button>
+            </div>
+
+            <!-- Conteúdo Abas -->
+            <div class="flex-grow overflow-y-auto custom-scrollbar pr-1">
+                <!-- Tab High Scores -->
+                <div id="content-highscores" class="space-y-3">
+                    <div id="scores-list" class="space-y-2">
+                        <!-- Preenchido via JS -->
+                    </div>
+                </div>
+
+                <!-- Tab Conquistas/Badges -->
+                <div id="content-badges" class="hidden grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <!-- Preenchido via JS -->
+                </div>
+            </div>
+
+            <button onclick="game.resetStats()" class="text-xs text-rose-400/70 hover:text-rose-400 text-center pt-2">
+                Zerar estatísticas e progresso
+            </button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="w-full text-center py-4 text-xs text-slate-500 font-medium">
+        MathMaster Quest &copy; 2026 - Desenvolvido para Alta Performance Mental
+    </footer>
+
+    <script>
+        /**
+         * Módulo de Áudio Sintetizado (Web Audio API)
+         * Dispensa arquivos externos de áudio garantindo funcionamento 100% offline e rápido.
+         */
+        class SoundSystem {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+            }
+
+            playTone(freq, type, duration, startVol = 0.3, endVol = 0) {
+                if (this.muted) return;
+                this.init();
+                
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+
+                    gain.gain.setValueAtTime(startVol, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(Math.max(endVol, 0.0001), this.ctx.currentTime + duration);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + duration);
+                } catch (e) {
+                    console.error("Erro áudio:", e);
+                }
+            }
+
+            playCorrect() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                
+                // Arpejo de vitória suave (C5 - E5 - G5)
+                [523.25, 659.25, 783.99].forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + (idx * 0.08));
+                    gain.gain.setValueAtTime(0.2, now + (idx * 0.08));
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + (idx * 0.08) + 0.25);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + (idx * 0.08));
+                    osc.stop(now + (idx * 0.08) + 0.25);
+                });
+            }
+
+            playWrong() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                
+                osc.frequency.setValueAtTime(160, now);
+                osc.frequency.exponentialRampToValueAtTime(90, now + 0.3);
+
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.3);
+            }
+
+            playClick() {
+                this.playTone(400, 'sine', 0.05, 0.1);
+            }
+
+            playPowerUp() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.linearRampToValueAtTime(800, now + 0.2);
+
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.2);
+            }
+
+            toggleMute() {
+                this.muted = !this.muted;
+                const btn = document.getElementById('btn-sound');
+                if (this.muted) {
+                    btn.innerHTML = `<i class="fa-solid fa-volume-xmark text-lg text-rose-400"></i>`;
+                } else {
+                    btn.innerHTML = `<i class="fa-solid fa-volume-high text-lg"></i>`;
+                    this.playClick();
+                }
+            }
+        }
+
+        const audio = new SoundSystem();
+
+        /**
+         * Classe Principal do Jogo MathMaster
+         */
+        class MathGame {
+            constructor() {
+                // Configurações
+                this.mode = 'timer'; // timer, practice, levels, perfect
+                this.operations = ['add', 'sub'];
+                this.difficulty = 'easy';
+                this.timerDuration = 30;
+
+                // Estado do Jogo
+                this.score = 0;
+                this.streak = 0;
+                this.maxStreak = 0;
+                this.correctAnswers = 0;
+                this.totalQuestions = 0;
+                this.currentQuestion = null;
+                this.userInput = '';
+                this.timeLeft = 0;
+                this.timerInterval = null;
+                this.questionStartTime = 0;
+                this.responseTimes = [];
+                this.level = 1;
+
+                // Power-ups
+                this.powerUps = {
+                    skip: 1,
+                    double: 1,
+                    hint: 1
+                };
+                this.isDoublePoints = false;
+
+                // Dados de estatísticas e conquistas
+                this.stats = this.loadStats();
+                this.badges = [
+                    { id: 'first_win', name: 'Primeiros Passos', desc: 'Conclua seu primeiro jogo', icon: 'fa-baby', unlocked: false },
+                    { id: 'streak_10', name: 'Em Chamas', desc: 'Alcançou um combo de 10 acertos', icon: 'fa-fire', unlocked: false },
+                    { id: 'score_500', name: 'Mestre da Matemática', desc: 'Marque mais de 500 pontos em uma partida', icon: 'fa-award', unlocked: false },
+                    { id: 'perfect_5', name: 'Perfeição Total', desc: 'Acerte 5 sem errar no Modo Perfect', icon: 'fa-bullseye', unlocked: false },
+                    { id: 'fast_thinker', name: 'Pensador Relâmpago', desc: 'Responda uma questão em menos de 1.5s', icon: 'fa-bolt', unlocked: false },
+                    { id: 'hard_core', name: 'Genio do Cálculo', desc: 'Conclua uma partida no Difícil', icon: 'fa-brain', unlocked: false }
+                ];
+
+                this.loadBadges();
+                this.bindKeyboard();
+            }
+
+            // --- Gerenciamento de Telas ---
+            showScreen(screenId) {
+                ['menu', 'game', 'result'].forEach(s => {
+                    document.getElementById(`screen-${s}`).classList.add('hidden');
+                });
+                document.getElementById(`screen-${screenId}`).classList.remove('hidden');
+            }
+
+            // --- Configurações de Opções ---
+            selectMode(mode) {
+                audio.playClick();
+                this.mode = mode;
+                document.querySelectorAll('#screen-menu [id^="mode-"]').forEach(btn => btn.classList.remove('active'));
+                document.getElementById(`mode-${mode}`).classList.add('active');
+
+                // Mostrar/Ocultar duração do timer
+                const timerOpts = document.getElementById('timer-options');
+                if (mode === 'timer') {
+                    timerOpts.classList.remove('hidden');
+                } else {
+                    timerOpts.classList.add('hidden');
+                }
+            }
+
+            toggleOp(op) {
+                audio.playClick();
+                if (op === 'mix') {
+                    this.operations = ['add', 'sub', 'mul', 'div'];
+                    document.querySelectorAll('#op-selector button').forEach(b => b.classList.remove('active'));
+                    document.querySelector('[data-op="mix"]').classList.add('active');
+                    return;
+                }
+
+                document.querySelector('[data-op="mix"]').classList.remove('active');
+                
+                const idx = this.operations.indexOf(op);
+                if (idx > -1) {
+                    if (this.operations.length > 1) {
+                        this.operations.splice(idx, 1);
+                        document.querySelector(`[data-op="${op}"]`).classList.remove('active');
+                    }
+                } else {
+                    this.operations.push(op);
+                    document.querySelector(`[data-op="${op}"]`).classList.add('active');
+                }
+            }
+
+            selectDiff(diff) {
+                audio.playClick();
+                this.difficulty = diff;
+                document.querySelectorAll('#screen-menu [id^="diff-"]').forEach(btn => btn.classList.remove('active'));
+                document.getElementById(`diff-${diff}`).classList.add('active');
+            }
+
+            selectTime(sec) {
+                audio.playClick();
+                this.timerDuration = sec;
+                document.querySelectorAll('#screen-menu [id^="time-"]').forEach(btn => btn.classList.remove('active'));
+                document.getElementById(`time-${sec}`).classList.add('active');
+            }
+
+            // --- Fluxo Principal do Jogo ---
+            start() {
+                audio.playClick();
+                this.score = 0;
+                this.streak = 0;
+                this.maxStreak = 0;
+                this.correctAnswers = 0;
+                this.totalQuestions = 0;
+                this.responseTimes = [];
+                this.level = 1;
+
+                // Reset de Power-ups
+                this.powerUps = { skip: 1, double: 1, hint: 1 };
+                this.updatePowerUpUI();
+
+                this.showScreen('game');
+                this.updateHUD();
+
+                if (this.mode === 'timer') {
+                    this.timeLeft = this.timerDuration;
+                    document.getElementById('hud-timer-label').innerText = 'Tempo';
+                    this.startTimer();
+                } else if (this.mode === 'levels') {
+                    document.getElementById('hud-timer-label').innerText = 'Nível';
+                    document.getElementById('game-timer').innerText = `1/10`;
+                } else if (this.mode === 'perfect') {
+                    document.getElementById('hud-timer-label').innerText = 'Modo';
+                    document.getElementById('game-timer').innerText = 'Morte Súbita';
+                } else {
+                    document.getElementById('hud-timer-label').innerText = 'Modo';
+                    document.getElementById('game-timer').innerText = 'Livre';
+                }
+
+                this.nextQuestion();
+            }
+
+            startTimer() {
+                clearInterval(this.timerInterval);
+                const progressBar = document.getElementById('game-progress-bar');
+                
+                this.timerInterval = setInterval(() => {
+                    this.timeLeft -= 1;
+                    document.getElementById('game-timer').innerText = `${this.timeLeft}s`;
+                    
+                    const pct = (this.timeLeft / this.timerDuration) * 100;
+                    progressBar.style.width = `${pct}%`;
+
+                    if (this.timeLeft <= 0) {
+                        clearInterval(this.timerInterval);
+                        this.endGame();
+                    }
+                }, 1000);
+            }
+
+            nextQuestion() {
+                this.userInput = '';
+                this.isDoublePoints = false;
+                document.getElementById('multiplier-badge').classList.add('hidden');
+                document.getElementById('hint-box').classList.add('hidden');
+                this.updateInputDisplay();
+
+                // Gerar Questão com base nas escolhas
+                this.currentQuestion = this.generateMathProblem();
+                document.getElementById('math-expr').innerText = `${this.currentQuestion.num1} ${this.currentQuestion.symbol} ${this.currentQuestion.num2} = ?`;
+
+                this.questionStartTime = Date.now();
+            }
+
+            generateMathProblem() {
+                const op = this.operations[Math.floor(Math.random() * this.operations.length)];
+                let num1, num2, answer, symbol;
+
+                let maxRange = 10;
+                if (this.difficulty === 'medium') maxRange = 25;
+                if (this.difficulty === 'hard') maxRange = 50;
+
+                // Ajustar alcance por Nível se o modo for Levels
+                if (this.mode === 'levels') {
+                    maxRange = 10 + (this.level * 5);
+                }
+
+                switch (op) {
+                    case 'add':
+                        symbol = '+';
+                        num1 = Math.floor(Math.random() * maxRange) + 1;
+                        num2 = Math.floor(Math.random() * maxRange) + 1;
+                        answer = num1 + num2;
+                        break;
+                    case 'sub':
+                        symbol = '-';
+                        num1 = Math.floor(Math.random() * maxRange) + 1;
+                        num2 = Math.floor(Math.random() * num1) + 1; // Para evitar resposta negativa no fácil/médio
+                        answer = num1 - num2;
+                        break;
+                    case 'mul':
+                        symbol = '×';
+                        const mulMax = this.difficulty === 'easy' ? 10 : (this.difficulty === 'medium' ? 12 : 15);
+                        num1 = Math.floor(Math.random() * mulMax) + 2;
+                        num2 = Math.floor(Math.random() * mulMax) + 2;
+                        answer = num1 * num2;
+                        break;
+                    case 'div':
+                        symbol = '÷';
+                        num2 = Math.floor(Math.random() * 10) + 2;
+                        answer = Math.floor(Math.random() * (maxRange / 2)) + 1;
+                        num1 = num2 * answer; // Garantir divisão inteira perfeita
+                        break;
+                }
+
+                return { num1, num2, symbol, answer };
+            }
+
+            // --- Entrada de Usuário ---
+            pressKey(key) {
+                audio.playClick();
+                if (key === 'back') {
+                    this.userInput = this.userInput.slice(0, -1);
+                } else if (key === '-') {
+                    if (this.userInput === '') this.userInput = '-';
+                } else if (this.userInput.length < 6) {
+                    this.userInput += key;
+                }
+                this.updateInputDisplay();
+            }
+
+            bindKeyboard() {
+                window.addEventListener('keydown', (e) => {
+                    const activeScreen = document.getElementById('screen-game');
+                    if (activeScreen.classList.contains('hidden')) return;
+
+                    if (e.key >= '0' && e.key <= '9') {
+                        this.pressKey(e.key);
+                    } else if (e.key === '-') {
+                        this.pressKey('-');
+                    } else if (e.key === 'Backspace') {
+                        this.pressKey('back');
+                    } else if (e.key === 'Enter') {
+                        this.submitAnswer();
+                    }
+                });
+            }
+
+            updateInputDisplay() {
+                const display = document.getElementById('user-input-display');
+                if (this.userInput === '') {
+                    display.innerHTML = `<span class="animate-pulse text-indigo-400/50">|</span>`;
+                } else {
+                    display.innerText = this.userInput;
+                }
+            }
+
+            submitAnswer() {
+                if (this.userInput === '' || this.userInput === '-') return;
+
+                const userVal = parseInt(this.userInput, 10);
+                const timeTaken = (Date.now() - this.questionStartTime) / 1000;
+                this.responseTimes.push(timeTaken);
+                this.totalQuestions++;
+
+                const card = document.getElementById('question-card');
+
+                if (userVal === this.currentQuestion.answer) {
+                    // --- ACERTO ---
+                    audio.playCorrect();
+                    this.correctAnswers++;
+                    this.streak++;
+                    if (this.streak > this.maxStreak) this.maxStreak = this.streak;
+
+                    // Cálculo da Pontuação
+                    let basePoints = 10 * (this.difficulty === 'easy' ? 1 : this.difficulty === 'medium' ? 1.5 : 2);
+                    let streakBonus = Math.min(this.streak * 2, 20);
+                    let points = Math.round(basePoints + streakBonus);
+
+                    if (this.isDoublePoints) points *= 2;
+
+                    this.score += points;
+
+                    // Efeitos Visuais
+                    card.classList.add('pulse-correct');
+                    setTimeout(() => card.classList.remove('pulse-correct'), 500);
+
+                    // Verificar conquistas instantâneas
+                    if (timeTaken < 1.5) this.unlockBadge('fast_thinker');
+                    if (this.streak >= 10) this.unlockBadge('streak_10');
+
+                    // Atualizar Nível (se modo Levels)
+                    if (this.mode === 'levels') {
+                        if (this.correctAnswers % 3 === 0) {
+                            this.level++;
+                            document.getElementById('game-timer').innerText = `${this.level}/10`;
+                            if (this.level > 10) {
+                                this.endGame(true);
+                                return;
+                            }
+                        }
+                    }
+
+                    this.updateHUD();
+                    this.nextQuestion();
+
+                } else {
+                    // --- ERRO ---
+                    audio.playWrong();
+                    this.streak = 0;
+
+                    card.classList.add('shake-anim');
+                    setTimeout(() => card.classList.remove('shake-anim'), 400);
+
+                    if (this.mode === 'perfect') {
+                        this.endGame();
+                        return;
+                    }
+
+                    this.updateHUD();
+                    this.nextQuestion();
+                }
+            }
+
+            // --- Power-ups ---
+            usePowerUp(type) {
+                if (this.powerUps[type] <= 0) return;
+
+                audio.playPowerUp();
+                this.powerUps[type]--;
+                this.updatePowerUpUI();
+
+                if (type === 'skip') {
+                    this.nextQuestion();
+                } else if (type === 'double') {
+                    this.isDoublePoints = true;
+                    document.getElementById('multiplier-badge').classList.remove('hidden');
+                } else if (type === 'hint') {
+                    const ans = this.currentQuestion.answer;
+                    const min = ans - Math.floor(Math.random() * 3 + 1);
+                    const max = ans + Math.floor(Math.random() * 3 + 1);
+                    document.getElementById('hint-range').innerText = `${min} e ${max}`;
+                    document.getElementById('hint-box').classList.remove('hidden');
+                }
+            }
+
+            updatePowerUpUI() {
+                document.getElementById('pu-skip-count').innerText = this.powerUps.skip;
+                document.getElementById('pu-double-count').innerText = this.powerUps.double;
+                document.getElementById('pu-hint-count').innerText = this.powerUps.hint;
+
+                document.getElementById('pu-skip').disabled = this.powerUps.skip <= 0;
+                document.getElementById('pu-double').disabled = this.powerUps.double <= 0;
+                document.getElementById('pu-hint').disabled = this.powerUps.hint <= 0;
+            }
+
+            updateHUD() {
+                document.getElementById('game-score').innerText = this.score;
+                document.getElementById('game-streak').innerText = this.streak;
+            }
+
+            quit() {
+                audio.playClick();
+                clearInterval(this.timerInterval);
+                this.showScreen('menu');
+            }
+
+            endGame(victory = false) {
+                clearInterval(this.timerInterval);
+
+                // Calcular precisão e tempo médio
+                const accuracy = this.totalQuestions > 0 ? Math.round((this.correctAnswers / this.totalQuestions) * 100) : 0;
+                const avgTime = this.responseTimes.length > 0 
+                    ? (this.responseTimes.reduce((a, b) => a + b, 0) / this.responseTimes.length).toFixed(1) 
+                    : 0;
+
+                // Preencher tela de resultados
+                document.getElementById('res-score').innerText = this.score;
+                document.getElementById('res-accuracy-count').innerText = `${this.correctAnswers} / ${this.totalQuestions}`;
+                document.getElementById('res-accuracy-pct').innerText = `${accuracy}%`;
+                document.getElementById('res-max-streak').innerText = `${this.maxStreak} 🔥`;
+                document.getElementById('res-avg-time').innerText = `${avgTime}s`;
+
+                // Títulos baseados em desempenho
+                if (victory) {
+                    document.getElementById('result-title').innerText = "🏆 Vitória Suprema!";
+                    document.getElementById('result-subtitle').innerText = "Você superou todos os níveis com maestria!";
+                    confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
+                } else if (this.score > 200) {
+                    document.getElementById('result-title').innerText = "Incrível!";
+                    document.getElementById('result-subtitle').innerText = "Você tem um raciocínio muito rápido!";
+                    confetti({ particleCount: 100, spread: 60, origin: { y: 0.6 } });
+                } else {
+                    document.getElementById('result-title').innerText = "Fim de Jogo!";
+                    document.getElementById('result-subtitle').innerText = "Continue praticando para evoluir!";
+                }
+
+                // Verificar Recordes e Badges
+                const isNewHigh = this.saveHighScore(this.score, this.mode);
+                if (isNewHigh) {
+                    document.getElementById('high-score-alert').classList.remove('hidden');
+                } else {
+                    document.getElementById('high-score-alert').classList.add('hidden');
+                }
+
+                this.unlockBadge('first_win');
+                if (this.score >= 500) this.unlockBadge('score_500');
+                if (this.mode === 'perfect' && this.correctAnswers >= 5) this.unlockBadge('perfect_5');
+                if (this.difficulty === 'hard') this.unlockBadge('hard_core');
+
+                this.showScreen('result');
+            }
+
+            loadStats() {
+                const saved = localStorage.getItem('mathmaster_scores');
+                return saved ? JSON.parse(saved) : [];
+            }
+
+            saveHighScore(score, mode) {
+                if (score <= 0) return false;
+                
+                const newEntry = {
+                    score,
+                    mode,
+                    date: new Date().toLocaleDateString('pt-BR')
+                };
+
+                this.stats.push(newEntry);
+                this.stats.sort((a, b) => b.score - a.score);
+                this.stats = this.stats.slice(0, 5); // Salvar top 5
+
+                localStorage.setItem('mathmaster_scores', JSON.stringify(this.stats));
+                return this.stats[0] === newEntry;
+            }
+
+            loadBadges() {
+                const savedBadges = localStorage.getItem('mathmaster_badges');
+                if (savedBadges) {
+                    const unlockedIds = JSON.parse(savedBadges);
+                    this.badges.forEach(b => {
+                        if (unlockedIds.includes(b.id)) b.unlocked = true;
+                    });
+                }
+            }
+
+            unlockBadge(id) {
+                const badge = this.badges.find(b => b.id === id);
+                if (badge && !badge.unlocked) {
+                    badge.unlocked = true;
+                    const unlocked = this.badges.filter(b => b.unlocked).map(b => b.id);
+                    localStorage.setItem('mathmaster_badges', JSON.stringify(unlocked));
+                }
+            }
+
+            // --- Modal de Estatísticas ---
+            openStatsModal() {
+                audio.playClick();
+                this.renderStatsModal();
+                document.getElementById('modal-stats').classList.remove('hidden');
+            }
+
+            closeStatsModal() {
+                audio.playClick();
+                document.getElementById('modal-stats').classList.add('hidden');
+            }
+
+            switchTab(tab) {
+                audio.playClick();
+                if (tab === 'highscores') {
+                    document.getElementById('content-highscores').classList.remove('hidden');
+                    document.getElementById('content-badges').classList.add('hidden');
+                    document.getElementById('tab-highscores').className = 'pb-2 font-bold text-sm text-indigo-400 border-b-2 border-indigo-400';
+                    document.getElementById('tab-badges').className = 'pb-2 font-bold text-sm text-slate-400 border-b-2 border-transparent';
+                } else {
+                    document.getElementById('content-highscores').classList.add('hidden');
+                    document.getElementById('content-badges').classList.remove('hidden');
+                    document.getElementById('tab-badges').className = 'pb-2 font-bold text-sm text-indigo-400 border-b-2 border-indigo-400';
+                    document.getElementById('tab-highscores').className = 'pb-2 font-bold text-sm text-slate-400 border-b-2 border-transparent';
+                }
+            }
+
+            renderStatsModal() {
+                // High Scores
+                const scoresList = document.getElementById('scores-list');
+                if (this.stats.length === 0) {
+                    scoresList.innerHTML = `<p class="text-sm text-slate-500 text-center py-4">Nenhum recorde registrado ainda.</p>`;
+                } else {
+                    scoresList.innerHTML = this.stats.map((s, i) => `
+                        <div class="flex justify-between items-center bg-slate-900/40 p-3 rounded-xl border border-slate-800">
+                            <div class="flex items-center gap-3">
+                                <span class="font-bold text-lg ${i === 0 ? 'text-amber-400' : 'text-slate-500'}">#${i + 1}</span>
+                                <div>
+                                    <div class="font-bold text-white">${s.score} pts</div>
+                                    <div class="text-[10px] text-slate-400 uppercase tracking-wider">${s.mode} - ${s.date}</div>
+                                </div>
+                            </div>
+                            ${i === 0 ? '<i class="fa-solid fa-crown text-amber-400"></i>' : ''}
+                        </div>
+                    `).join('');
+                }
+
+                // Badges
+                const unlockedCount = this.badges.filter(b => b.unlocked).length;
+                document.getElementById('badges-count').innerText = `${unlockedCount}/${this.badges.length}`;
+
+                const badgesGrid = document.getElementById('content-badges');
+                badgesGrid.innerHTML = this.badges.map(b => `
+                    <div class="p-3 rounded-xl border ${b.unlocked ? 'bg-indigo-950/30 border-indigo-500/40' : 'bg-slate-900/20 border-slate-800 opacity-50'} flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg ${b.unlocked ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-800 text-slate-600'} flex items-center justify-center text-xl shrink-0">
+                            <i class="fa-solid ${b.icon}"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-xs text-white">${b.name}</h4>
+                            <p class="text-[10px] text-slate-400">${b.desc}</p>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            resetStats() {
+                if (confirm('Tem certeza que deseja zerar todo o seu histórico de recordes e conquistas?')) {
+                    localStorage.removeItem('mathmaster_scores');
+                    localStorage.removeItem('mathmaster_badges');
+                    this.stats = [];
+                    this.badges.forEach(b => b.unlocked = false);
+                    this.renderStatsModal();
+                }
+            }
+        }
+
+        // Inicializar Instância do Jogo
+        const game = new MathGame();
+    </script>
+</body>
+</html>
+```
